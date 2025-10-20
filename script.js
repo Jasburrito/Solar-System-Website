@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Solar System</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ---------- Interactive Assistant Panel ----------
+        const assistantPanel = document.createElement('div');
+        assistantPanel.style.position = 'absolute';
+        assistantPanel.style.top = '20px';
+        assistantPanel.style.left = '-360px'; // Start off-screen
+        assistantPanel.style.width = '320px';
+        assistantPanel.style.padding = '20px';
+        assistantPanel.style.background = 'rgba(0, 20, 40, 0.7)';
+        assistantPanel.style.border = '2px solid rgba(0, 255, 255, 0.5)';
+        assistantPanel.style.borderRadius = '10px';
+        assistantPanel.style.fontFamily = 'Orbitron, sans-serif';
+        assistantPanel.style.color = '#00ffff';
+        assistantPanel.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1)';
+        assistantPanel.style.backdropFilter = 'blur(10px)';
+        assistantPanel.style.animation = 'panelPulse 3s ease-in-out infinite';
+        assistantPanel.style.zIndex = '1000';
+        assistantPanel.style.transition = 'left 0.8s ease-out';
+        document.body.appendChild(assistantPanel);
+
+        // Add pulsing animation
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+        @keyframes panelPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1); }
+            50% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.5), inset 0 0 30px rgba(0, 255, 255, 0.15); }
+        }
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 5px #00ffff; }
+            50% { text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
+        }
+        `;
+        document.head.appendChild(styleEl);
+
+        // Assistant header
+        const assistantHeader = document.createElement('div');
+        assistantHeader.style.fontSize = '18px';
+        assistantHeader.style.fontWeight = '700';
+        assistantHeader.style.marginBottom = '15px';
+        assistantHeader.style.textAlign = 'center';
+        assistantHeader.style.animation = 'textGlow 2s ease-in-out infinite';
+        assistantHeader.innerHTML = '◉ SOLAR NAVIGATOR ◉';
+        assistantPanel.appendChild(assistantHeader);
+
+        // Status indicator
+        const statusIndicator = document.createElement('div');
+        statusIndicator.style.fontSize = '12px';
+        statusIndicator.style.marginBottom = '15px';
+        statusIndicator.style.opacity = '0.8';
+        statusIndicator.innerHTML = '● System Online';
+        assistantPanel.appendChild(statusIndicator);
+
+        // Message display
+        const messageDisplay = document.createElement('div');
+        messageDisplay.style.fontSize = '14px';
+        messageDisplay.style.lineHeight = '1.6';
+        messageDisplay.style.marginBottom = '15px';
+        messageDisplay.style.minHeight = '80px';
+        messageDisplay.style.color = '#ffffff';
+        assistantPanel.appendChild(messageDisplay);
+
+        // Quick actions
+        const actionsContainer = document.createElement('div');
+        actionsContainer.style.display = 'flex';
+        actionsContainer.style.flexDirection = 'column';
+        actionsContainer.style.gap = '8px';
+        assistantPanel.appendChild(actionsContainer);
+
+        // Settings panel (initially hidden)
+        const settingsPanel = document.createElement('div');
+        settingsPanel.style.display = 'none';
+        settingsPanel.style.marginTop = '15px';
+        settingsPanel.style.padding = '15px';
+        settingsPanel.style.background = 'rgba(0, 40, 80, 0.5)';
+        settingsPanel.style.border = '1px solid rgba(0, 255, 255, 0.3)';
+        settingsPanel.style.borderRadius = '8px';
+        assistantPanel.appendChild(settingsPanel);
+
+        // Create action buttons
+        function createActionButton(text, onClick) {
+            const btn = document.createElement('button');
+            btn.innerText = text;
+            btn.style.padding = '8px 12px';
+            btn.style.background = 'rgba(0, 255, 255, 0.1)';
+            btn.style.border = '1px solid rgba(0, 255, 255, 0.5)';
+            btn.style.borderRadius = '5px';
+            btn.style.color = '#00ffff';
+            btn.style.fontFamily = 'Orbitron, sans-serif';
+            btn.style.fontSize = '12px';
+            btn.style.cursor = 'pointer';
+            btn.style.transition = 'all 0.3s';
+            btn.onmouseenter = () => {
+                btn.style.background = 'rgba(0, 255, 255, 0.3)';
+                btn.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.5)';
+            };
+            btn.onmouseleave = () => {
+                btn.style.background = 'rgba(0, 255, 255, 0.1)';
+                btn.style.boxShadow = 'none';
+            };
+            btn.onclick = onClick;
+            return btn;
+        }
+
+        // Create checkbox
+        function createCheckbox(label, onChange) {
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.marginBottom = '10px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.style.marginRight = '10px';
+            checkbox.style.cursor = 'pointer';
+            checkbox.style.width = '16px';
+            checkbox.style.height = '16px';
+            checkbox.onchange = (e) => {
+                e.stopPropagation();
+                onChange(e);
+            };
+
+            const labelEl = document.createElement('label');
+            labelEl.innerText = label;
+            labelEl.style.color = '#ffffff';
+            labelEl.style.fontSize = '13px';
+            labelEl.style.cursor = 'pointer';
+            labelEl.style.userSelect = 'none';
+            labelEl.onclick = (e) => {
+                e.stopPropagation();
+                checkbox.checked = !checkbox.checked;
+                onChange({ target: checkbox });
+            };
+
+            container.appendChild(checkbox);
+            container.appendChild(labelEl);
+
+            return { container, checkbox };
+        }
+
+        // Assistant messages
+        const messages = [
+            "Welcome, Explorer. I am your Solar Navigator assistant.",
+            "Use your mouse wheel to zoom in and out of the solar system.",
+            "Watch as planets orbit the Sun in real-time motion.",
+            "Click on a planet to see interesting facts about it."
+        ];
+
+        let currentMessageIndex = 0;
+        let typingInterval;
+
+        function typeMessage(message, callback) {
+            let charIndex = 0;
+            messageDisplay.innerHTML = '';
+            clearInterval(typingInterval);
+            
+            typingInterval = setInterval(() => {
+                if (charIndex < message.length) {
+                    messageDisplay.innerHTML += message[charIndex];
+                    charIndex++;
+                } else {
+                    clearInterval(typingInterval);
+                    if (callback) callback();
+                }
+            }, 30);
+        }
+
+        function showNextMessage() {
+            currentMessageIndex = (currentMessageIndex + 1) % messages.length;
+            typeMessage(messages[currentMessageIndex]);
+        }
+
+        // ---------- Add Animated Two-Line Title ----------
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.top = '20px';
+        container.style.width = '100%';
+        container.style.textAlign = 'center';
+        container.style.pointerEvents = 'none';
+        container.style.transition = 'opacity 1s ease-out';
+        container.style.zIndex = '100';
+        document.body.appendChild(container);
+        
+        // Top line: "Welcome to the"
+        const topLine = document.createElement('div');
+        topLine.style.fontSize = '28px';
+        topLine.style.fontFamily = 'Orbitron, sans-serif';
+        topLine.style.fontWeight = '700';
+        topLine.style.marginBottom = '10px';
+        container.appendChild(topLine);
+        
+        // Bottom line: "Solar System"
+        const bottomLine = document.createElement('div');
+        bottomLine.style.fontSize = '56px';
+        bottomLine.style.fontFamily = 'Orbitron, sans-serif';
+        bottomLine.style.fontWeight = '700';
+        container.appendChild(bottomLine);
+        
+        // Words for top line
+        const topWords = ["Welcome", "to", "the"];
+        const topSpans = [];
+        topWords.forEach(word => {
+            const span = document.createElement('span');
+            span.innerText = word + " ";
+            span.style.color = '#ffffff';
+            span.style.opacity = '0';
+            span.style.textShadow = '0 0 15px #ffffff, 0 0 30px #00ffff';
+            span.style.transition = 'opacity 1s ease, text-shadow 1s ease';
+            topLine.appendChild(span);
+            topSpans.push(span);
+        });
+        
+        // Bottom line span
+        const bottomSpan = document.createElement('span');
+        bottomSpan.innerText = "Solar System";
+        bottomSpan.style.color = '#ffffff';
+        bottomSpan.style.opacity = '0';
+        bottomSpan.style.textShadow = '0 0 15px #ffffff, 0 0 30px #00ffff';
+        bottomSpan.style.transition = 'opacity 1s ease, text-shadow 1s ease';
+        bottomLine.appendChild(bottomSpan);
+        
+        // Planet name title (initially hidden)
+        const planetNameTitle = document.createElement('div');
+        planetNameTitle.style.position = 'absolute';
+        planetNameTitle.style.top = '20px';
+        planetNameTitle.style.width = '100%';
+        planetNameTitle.style.textAlign = 'center';
+        planetNameTitle.style.fontSize = '56px';
+        planetNameTitle.style.fontFamily = 'Orbitron, sans-serif';
+        planetNameTitle.style.fontWeight = '700';
+        planetNameTitle.style.color = '#ffffff';
+        planetNameTitle.style.textShadow = '0 0 20px #00ffff';
+        planetNameTitle.style.opacity = '0';
+        planetNameTitle.style.transition = 'opacity 1s ease';
+        planetNameTitle.style.pointerEvents = 'none';
+        planetNameTitle.style.zIndex = '100';
+        document.body.appendChild(planetNameTitle);
+        
+        // Load Orbitron font
+        const linkOrbitron = document.createElement('link');
+        linkOrbitron.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap';
+        linkOrbitron.rel = 'stylesheet';
+        document.head.appendChild(linkOrbitron);
+        
+        // Animate words with specified timing
+        setTimeout(() => { topSpans[0].style.opacity = '1'; }, 1000);
+        setTimeout(() => { topSpans[1].style.opacity = '1'; }, 2000);
+        setTimeout(() => { topSpans[2].style.opacity = '1'; }, 3000);
+        setTimeout(() => { bottomSpan.style.opacity = '1'; }, 4000);
+        
+        // Remove glow and fade out title
+        setTimeout(() => {
+            const allSpans = [...topSpans, bottomSpan];
+            allSpans.forEach(span => {
+                span.style.textShadow = 'none';
+            });
+        }, 5000);
+        
+        // Fade out title completely
+        setTimeout(() => {
+            container.style.opacity = '0';
+        }, 6000);
+        
+        // Slide in Solar Navigator
+        setTimeout(() => {
+            assistantPanel.style.left = '20px';
+        }, 7000);
+        
+        // Initial message for assistant
+        setTimeout(() => typeMessage(messages[0]), 7500);
+
+        // Auto-advance messages
+        setInterval(showNextMessage, 8000);
+
+        // Variables for settings
+        let targetZoom;
+        const orbits = [];
+        let alignPlanets = false;
+        let stopOrbits = false;
+        let stopRotation = false;
+        let isInDetailView = false;
+
+        // Settings button
+        const settingsBtn = createActionButton('⚙ Settings', () => {
+            if (settingsPanel.style.display === 'none') {
+                settingsPanel.style.display = 'block';
+                settingsBtn.innerText = '⚙ Hide Settings';
+            } else {
+                settingsPanel.style.display = 'none';
+                settingsBtn.innerText = '⚙ Settings';
+            }
+        });
+        actionsContainer.appendChild(settingsBtn);
+
+        // Create checkboxes
+        const alignCheckbox = createCheckbox('Align Planets', (e) => {
+            alignPlanets = e.target.checked;
+            if (alignPlanets) {
+                planets.forEach((p, i) => {
+                    p.userData.angle = i % 2 === 0 ? Math.PI : 0;
+                });
+            }
+        });
+
+        const stopOrbitsCheckbox = createCheckbox('Stop Orbits', (e) => {
+            stopOrbits = e.target.checked;
+        });
+
+        const stopRotationCheckbox = createCheckbox('Stop Rotation', (e) => {
+            stopRotation = e.target.checked;
+        });
+
+        settingsPanel.appendChild(alignCheckbox.container);
+        settingsPanel.appendChild(stopOrbitsCheckbox.container);
+        settingsPanel.appendChild(stopRotationCheckbox.container);
+
+        // ---------- Scene ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000010);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 10000);
+        camera.position.set(0, 500, 1200);
+        camera.lookAt(0,0,0);
+        const renderer = new THREE.WebGLRenderer({antialias:true});
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // ---------- Lighting ----------
+        scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+        const sunLight = new THREE.PointLight(0xffffff, 2, 0);
+        sunLight.position.set(0,0,0);
+        scene.add(sunLight);
+        
+        // Detail view lighting
+        const detailLight = new THREE.PointLight(0xffffff, 1.5, 1000);
+        detailLight.visible = false;
+        scene.add(detailLight);
+        
+        // ---------- Sun ----------
+        const sunMat = new THREE.MeshBasicMaterial({emissive:0xffffaa, emissiveIntensity:2, color:0xffffaa});
+        const sun = new THREE.Mesh(new THREE.SphereGeometry(200,64,64), sunMat);
+        scene.add(sun);
+        new THREE.TextureLoader().load("textures/Sun.jpg", tex=>{
+            sunMat.map = tex;
+            sunMat.needsUpdate = true;
+        });
+        
+        // ---------- Starfield ----------
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = [];
+        const addStars = (count, opacity) => {
+            for(let i=0;i<count;i++){
+                const phi = Math.acos(2*Math.random()-1);
+                const theta = 2 * Math.PI * Math.random();
+                const r = 4000;
+                starPositions.push(
+                    r * Math.sin(phi)*Math.cos(theta),
+                    r * Math.sin(phi)*Math.sin(theta),
+                    r * Math.cos(phi)
+                );
+            }
+        };
+        
+        // Add stars
+        addStars(3000, 1.0);
+        addStars(2000, 0.5);
+        addStars(2000, 0.25);
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions,3));
+        const starMaterial = new THREE.PointsMaterial({color:0xffffff, size:2, transparent:true});
+        const stars = new THREE.Points(starGeo, starMaterial);
+        scene.add(stars);
+        
+        // ---------- Planets Data ----------
+        const planetsData = [
+            {name:"Mercury", tex:"textures/mercury.jpg", radius:30, distance:300, rotSpeed:0.02, orbitSpeed:0.004},
+            {name:"Venus", tex:"textures/venus.jpg", radius:50, distance:450, rotSpeed:0.018, orbitSpeed:0.002},
+            {name:"Earth", tex:"textures/earth.jpg", radius:55, distance:600, rotSpeed:0.02, orbitSpeed:0.0015, clouds:"textures/earthclouds.jpg"},
+            {name:"Mars", tex:"textures/mars.jpg", radius:45, distance:750, rotSpeed:0.018, orbitSpeed:0.001},
+            {name:"Jupiter", tex:"textures/jupiter.jpg", radius:120, distance:950, rotSpeed:0.04, orbitSpeed:0.0004},
+            {name:"Saturn", tex:"textures/saturn.jpg", radius:100, distance:1150, rotSpeed:0.038, orbitSpeed:0.0003},
+            {name:"Uranus", tex:"textures/uranus.jpg", radius:70, distance:1350, rotSpeed:0.03, orbitSpeed:0.0002},
+            {name:"Neptune", tex:"textures/neptune.jpg", radius:70, distance:1550, rotSpeed:0.032, orbitSpeed:0.0001},
+        ];
+        const planets = [];
+        
+        // ---------- Helper: Create Planet ----------
+        function createPlanet(p){
+            const mat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.8, metalness:0.1 });
+            if(p.tex) new THREE.TextureLoader().load(p.tex, tex=>{ mat.map=tex; mat.needsUpdate=true });
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius,64,64), mat);
+            mesh.userData = {
+                name: p.name,
+                angle: Math.random()*Math.PI*2, 
+                distance:p.distance, 
+                rotSpeed:p.rotSpeed, 
+                orbitSpeed:p.orbitSpeed,
+                originalScale: 1
+            };
+            mesh.position.set(p.distance,0,0);
+            scene.add(mesh);
+            if(p.clouds){
+                const cloudGeo = new THREE.SphereGeometry(p.radius*1.02,64,64);
+                const cloudMat = new THREE.MeshStandardMaterial({
+                    map: new THREE.TextureLoader().load(p.clouds),
+                    transparent:true,
+                    opacity:0.35,
+                    depthWrite:false
+                });
+                const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+                mesh.add(cloudMesh);
+                mesh.userData.cloudMesh = cloudMesh;
+            }
+            return mesh;
+        }
+        
+        // ---------- Create Planets and Orbits ----------
+        planetsData.forEach(p=>{
+            const mesh = createPlanet(p);
+            planets.push(mesh);
+            const orbitGeo = new THREE.RingGeometry(p.distance-2, p.distance+2, 128);
+            const orbitMat = new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide, transparent:true, opacity:0.2});
+            const ring = new THREE.Mesh(orbitGeo, orbitMat);
+            ring.rotation.x = Math.PI/2;
+            scene.add(ring);
+            orbits.push(ring);
+        });
+        
+        // ---------- Saturn Rings ----------
+        const saturn = planets[5];
+        const saturnInner = saturn.geometry.parameters.radius * 1.2;
+        const saturnOuter = saturn.geometry.parameters.radius * 2.0;
+        const saturnRingGeo = new THREE.RingGeometry(saturnInner, saturnOuter, 256);
+        const saturnRingTex = new THREE.TextureLoader().load('textures/saturnring.jpg');
+        const saturnRingMat = new THREE.MeshBasicMaterial({
+            map: saturnRingTex,
+            transparent:true,
+            opacity:0.6,
+            side:THREE.DoubleSide
+        });
+        const saturnRing = new THREE.Mesh(saturnRingGeo, saturnRingMat);
+        saturnRing.rotation.x = THREE.MathUtils.degToRad(26.7);
+        scene.add(saturnRing);
+        
+        // ---------- Scroll Zoom ----------
+        targetZoom = camera.position.z;
+        window.addEventListener("wheel", (e)=>{
+            if (!isInDetailView) {
+                targetZoom += e.deltaY * 0.8;
+                if(targetZoom < 400) targetZoom = 400;
+                if(targetZoom > 2000) targetZoom = 2000;
+            }
+        });
+
+        // ---------- Planet Detail Info Panel ----------
+        const detailPanel = document.createElement('div');
+        detailPanel.style.position = 'absolute';
+        detailPanel.style.top = '50%';
+        detailPanel.style.right = '40px';
+        detailPanel.style.transform = 'translateY(-50%)';
+        detailPanel.style.width = '500px';
+        detailPanel.style.maxHeight = '70vh';
+        detailPanel.style.overflowY = 'auto';
+        detailPanel.style.padding = '25px';
+        detailPanel.style.background = 'rgba(0, 20, 40, 0.9)';
+        detailPanel.style.border = '2px solid rgba(0, 255, 255, 0.6)';
+        detailPanel.style.borderRadius = '15px';
+        detailPanel.style.fontFamily = 'Orbitron, sans-serif';
+        detailPanel.style.color = '#ffffff';
+        detailPanel.style.boxShadow = '0 0 30px rgba(0, 255, 255, 0.5), inset 0 0 30px rgba(0, 255, 255, 0.15)';
+        detailPanel.style.backdropFilter = 'blur(15px)';
+        detailPanel.style.display = 'none';
+        detailPanel.style.zIndex = '2000';
+        document.body.appendChild(detailPanel);
+
+        const detailTitle = document.createElement('div');
+        detailTitle.style.fontSize = '32px';
+        detailTitle.style.fontWeight = '700';
+        detailTitle.style.marginBottom = '20px';
+        detailTitle.style.textAlign = 'center';
+        detailTitle.style.color = '#00ffff';
+        detailTitle.style.textShadow = '0 0 10px #00ffff';
+        detailPanel.appendChild(detailTitle);
+
+        const detailStats = document.createElement('div');
+        detailStats.style.fontSize = '14px';
+        detailStats.style.lineHeight = '2';
+        detailStats.style.marginBottom = '20px';
+        detailStats.style.borderBottom = '1px solid rgba(0, 255, 255, 0.3)';
+        detailStats.style.paddingBottom = '15px';
+        detailPanel.appendChild(detailStats);
+
+        const factsTitle = document.createElement('div');
+        factsTitle.style.fontSize = '18px';
+        factsTitle.style.fontWeight = '700';
+        factsTitle.style.marginBottom = '15px';
+        factsTitle.style.color = '#00ffff';
+        factsTitle.innerText = '● INTERESTING FACTS';
+        detailPanel.appendChild(factsTitle);
+
+        const detailFacts = document.createElement('div');
+        detailFacts.style.fontSize = '14px';
+        detailFacts.style.lineHeight = '1.8';
+        detailFacts.style.marginBottom = '20px';
+        detailPanel.appendChild(detailFacts);
+
+        // Return button (centered at bottom)
+        const returnBtn = createActionButton('← Return to Solar System', () => {
+            exitDetailView();
+        });
+        returnBtn.style.position = 'absolute';
+        returnBtn.style.bottom = '40px';
+        returnBtn.style.left = '50%';
+        returnBtn.style.transform = 'translateX(-50%)';
+        returnBtn.style.padding = '12px 24px';
+        returnBtn.style.fontSize = '14px';
+        returnBtn.style.zIndex = '3000';
+        returnBtn.style.display = 'none';
+        document.body.appendChild(returnBtn);
+
+        // Planet data with structured stats and fun facts
+        const planetInfo = {
+            "Sun": {
+                stats: {
+                    "Type": "G-type Main-Sequence Star",
+                    "Mass": "99.86% of solar system's total mass",
+                    "Core Temperature": "27 million°F (15 million°C)",
+                    "Surface Temperature": "10,000°F (5,500°C)",
+                    "Corona Temperature": "1.8-3.6 million°F (1-2 million°C)"
+                },
+                facts: [
+                    "The Sun is 743 times the combined mass of every planet in the solar system and 330,000 times Earth's mass.",
+                    "Every second, the Sun transforms 600 billion kg of hydrogen into helium and converts 4 billion kg of matter into pure energy.",
+                    "Sunspots are cooler, darker areas caused by magnetic field disruptions and follow an 11-year solar cycle.",
+                    "Solar flares are powerful bursts of radiation released when magnetic fields interact on the Sun's surface.",
+                    "The Sun is currently halfway through its main-sequence life. In 6 billion years, it will expand into a Red Giant."
+                ]
+            },
+            "Mercury": {
+                stats: {
+                    "Diameter": "3,032 miles (4,879 km)",
+                    "Rotational Period (Day)": "59 Earth days",
+                    "Orbital Period (Year)": "88 Earth days",
+                    "Temperature Range": "-290°F to 800°F (-180°C to 430°C)",
+                    "Orbital Speed": "29 miles/second (47 km/s)",
+                    "Moons": "0"
+                },
+                facts: [
+                    "Mercury is the smallest planet, only slightly larger than our Moon.",
+                    "One day-night cycle on Mercury lasts 176 Earth days - over two Mercury years!",
+                    "It's the fastest planet, moving at 29 miles per second around the Sun.",
+                    "The Sun would appear 3x larger and 7x brighter if you stood on Mercury.",
+                    "Mercury has no moons or rings due to the Sun's overwhelming gravitational pull.",
+                    "The surface closely resembles our Moon, covered with impact craters from meteors and comets."
+                ]
+            },
+            "Venus": {
+                stats: {
+                    "Diameter": "7,521 miles (12,104 km)",
+                    "Rotational Period (Day)": "243 Earth days",
+                    "Orbital Period (Year)": "225 Earth days",
+                    "Surface Temperature": "820-900°F (438-482°C)",
+                    "Atmospheric Composition": "96% CO₂, Sulfuric Acid Clouds",
+                    "Moons": "0"
+                },
+                facts: [
+                    "Venus is the hottest planet in our solar system despite not being closest to the Sun.",
+                    "A day on Venus is longer than its year!",
+                    "The thick carbon dioxide atmosphere creates a runaway greenhouse effect, trapping enormous heat.",
+                    "Venus has thousands of volcanoes and clouds made of sulfuric acid.",
+                    "Venus goes through phases like the Moon - this discovery proved the heliocentric solar system model.",
+                    "Despite being Earth's size twin, Venus lacks its own magnetic field."
+                ]
+            },
+            "Earth": {
+                stats: {
+                    "Diameter": "7,926 miles (12,756 km)",
+                    "Rotational Period (Day)": "24 hours",
+                    "Orbital Period (Year)": "365.25 days",
+                    "Axial Tilt": "23.4 degrees",
+                    "Atmospheric Composition": "78% N₂, 21% O₂",
+                    "Moons": "1 (The Moon)"
+                },
+                facts: [
+                    "Earth is the only known planet with life in the Universe.",
+                    "Earth is the only planet covered with liquid water, providing a habitable environment.",
+                    "The 23.4° axial tilt creates our four seasons throughout the year.",
+                    "Tectonic plates move slowly, causing earthquakes and forming mountains when they collide.",
+                    "The Moon is tidally locked, showing only one face to Earth, and stabilizes our planet's tilt.",
+                    "The atmosphere protects us from meteoroids and harmful solar radiation."
+                ]
+            },
+            "Mars": {
+                stats: {
+                    "Diameter": "4,212 miles (6,779 km)",
+                    "Rotational Period (Day)": "24.6 hours",
+                    "Orbital Period (Year)": "687 Earth days",
+                    "Axial Tilt": "25 degrees",
+                    "Temperature Range": "-225°F to 70°F (-153°C to 20°C)",
+                    "Moons": "2 (Phobos and Deimos)"
+                },
+                facts: [
+                    "Mars appears red because iron minerals oxidize, creating rust-colored dust.",
+                    "Rovers have found evidence Mars was much wetter and warmer billions of years ago.",
+                    "Mars hosts Olympus Mons, the largest volcano in the solar system - 3x taller than Mt. Everest!",
+                    "Seasons last 4-6 months each due to Mars' distance from the Sun and elliptical orbit.",
+                    "Phobos orbits Mars three times per day and is slowly moving toward the planet.",
+                    "The thin atmosphere causes extreme temperature differences: spring at your feet, winter at your head!"
+                ]
+            },
+            "Jupiter": {
+                stats: {
+                    "Diameter": "86,881 miles (139,820 km)",
+                    "Rotational Period (Day)": "10 hours",
+                    "Orbital Period (Year)": "12 Earth years",
+                    "Composition": "90% Hydrogen, 10% Helium",
+                    "Wind Speed": "335 mph (540 km/h)",
+                    "Moons": "95 confirmed"
+                },
+                facts: [
+                    "Jupiter is the oldest and largest planet, able to fit 1,321 Earths inside!",
+                    "Jupiter has the shortest day of all planets - just 10 hours per rotation.",
+                    "The Great Red Spot is a storm larger than Earth that has raged for over 300 years.",
+                    "Jupiter's magnetic field is 20,000 times stronger than Earth's, creating spectacular aurorae.",
+                    "Jupiter is mostly hydrogen and helium - the main ingredients of a star, but didn't grow big enough to ignite.",
+                    "Ganymede, Jupiter's largest moon, is bigger than Mercury and has its own magnetic field!"
+                ]
+            },
+            "Saturn": {
+                stats: {
+                    "Diameter": "72,366 miles (116,460 km)",
+                    "Rotational Period (Day)": "10.7 hours",
+                    "Orbital Period (Year)": "29.4 Earth years",
+                    "Axial Tilt": "26.73 degrees",
+                    "Ring System Extent": "175,000 miles",
+                    "Moons": "146 confirmed"
+                },
+                facts: [
+                    "Saturn has the most moons of any planet - 146 confirmed!",
+                    "Saturn's rings extend 175,000 miles but are only about 30 feet tall on average.",
+                    "The rings are made of comet, asteroid, and moon fragments ranging from dust to mountain-sized chunks.",
+                    "Winds reach 1,100 mph (1,770 km/h) - second fastest in the solar system behind Neptune.",
+                    "Saturn is the only planet less dense than water - it would float in a giant bathtub!",
+                    "Titan, Saturn's largest moon, is the only moon with a thick atmosphere and has liquid methane seas."
+                ]
+            },
+            "Uranus": {
+                stats: {
+                    "Diameter": "31,518 miles (50,724 km)",
+                    "Rotational Period (Day)": "17 hours",
+                    "Orbital Period (Year)": "84 Earth years",
+                    "Axial Tilt": "97.8 degrees",
+                    "Temperature": "-371.5°F (-224.2°C)",
+                    "Moons": "28 known"
+                },
+                facts: [
+                    "Uranus has a 98° tilt, causing the most extreme seasons in the solar system.",
+                    "For a quarter of each Uranian year, one pole faces the Sun while the other endures 21 years of darkness.",
+                    "Uranus is an ice giant - 80% of its mass is hot dense 'icy' materials above a rocky core.",
+                    "It's the coldest planet with atmospheric temperatures reaching -371.5°F.",
+                    "Uranus has 13 known rings - the outer rings are colored red and blue!",
+                    "The magnetic field is tilted 60° from the rotation axis, creating off-center aurorae.",
+                    "Methane in the atmosphere gives Uranus its signature blue color."
+                ]
+            },
+            "Neptune": {
+                stats: {
+                    "Diameter": "30,599 miles (49,244 km)",
+                    "Rotational Period (Day)": "16 hours",
+                    "Orbital Period (Year)": "165 Earth years",
+                    "Axial Tilt": "28 degrees",
+                    "Temperature": "-353°F (-214°C)",
+                    "Moons": "16 known"
+                },
+                facts: [
+                    "Neptune is the farthest planet from the Sun in our solar system.",
+                    "Despite being far from the Sun, Neptune has the strongest winds in the solar system!",
+                    "Winds whip frozen methane clouds at speeds over 1,200 mph (2,000 km/h).",
+                    "Each of Neptune's four seasons lasts more than 40 years.",
+                    "A super-hot water ocean might exist under Neptune's clouds, kept liquid by extreme pressure.",
+                    "Methane in the atmosphere reflects blue light, giving Neptune its beautiful color.",
+                    "The Great Dark Spot discovered in 1989 was large enough to fit Earth inside!",
+                    "Triton, Neptune's largest moon, has a retrograde orbit and was likely captured from the Kuiper Belt."
+                ]
+            }
+        };
+
+        let detailViewPlanet = null;
+        let cameraStartPos = new THREE.Vector3();
+        let cameraTargetPos = new THREE.Vector3();
+        let detailViewProgress = 0;
+
+        function enterDetailView(planet) {
+            if (isInDetailView) return;
+            isInDetailView = true;
+            detailViewPlanet = planet;
+            detailViewProgress = 0;
+
+            // Slide out Solar Navigator
+            assistantPanel.style.left = '-360px';
+
+            // Store camera start position
+            cameraStartPos.copy(camera.position);
+            
+            // Calculate target position (more to the left)
+            const planetPos = planet.position.clone();
+            const offset = planet.userData.name === "Jupiter" ? 350 : planet.userData.name === "Saturn" ? 300 : 180;
+            cameraTargetPos.set(planetPos.x - offset * 2, planetPos.y, planetPos.z);
+
+            // Scale up and brighten planet
+            const scaleFactor = 1.3;
+            planet.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+            // Add detail lighting
+            detailLight.position.copy(planetPos);
+            detailLight.visible = true;
+
+            // Hide everything except stars and selected planet
+            sun.visible = false;
+            orbits.forEach(o => o.visible = false);
+            planets.forEach(p => {
+                if (p !== planet) p.visible = false;
+            });
+
+            // Keep Saturn ring visible if Saturn is selected
+            if (planet === saturn) {
+                saturnRing.visible = true;
+            } else {
+                saturnRing.visible = false;
+            }
+
+            // Show planet name at top
+            const planetName = planet.userData.name || "Sun";
+            planetNameTitle.innerText = planetName.toUpperCase();
+            planetNameTitle.style.opacity = '1';
+
+            // Show info panel and return button
+            setTimeout(() => {
+                detailPanel.style.display = 'block';
+                returnBtn.style.display = 'block';
+                detailTitle.innerText = planetName.toUpperCase();
+                
+                const info = planetInfo[planetName];
+                if (info) {
+                    // Build stats section
+                    let statsHTML = '';
+                    for (let key in info.stats) {
+                        statsHTML += `<div><span style="color: #00ffff;">${key}:</span> ${info.stats[key]}</div>`;
+                    }
+                    
+                    // Type out stats instantly
+                    detailStats.innerHTML = statsHTML;
+                    
+                    // Type out facts one by one
+                    let fullFacts = info.facts.join(' ');
+                    let charIndex = 0;
+                    detailFacts.innerHTML = '';
+                    
+                    const typeInterval = setInterval(() => {
+                        if (charIndex < fullFacts.length) {
+                            detailFacts.innerHTML += fullFacts[charIndex];
+                            charIndex++;
+                            detailPanel.scrollTop = detailPanel.scrollHeight;
+                        } else {
+                            clearInterval(typeInterval);
+                        }
+                    }, 15);
+                }
+            }, 1500);
+        }
+
+        function exitDetailView() {
+            if (!isInDetailView) return;
+            
+            detailPanel.style.display = 'none';
+            returnBtn.style.display = 'none';
+            planetNameTitle.style.opacity = '0';
+            detailViewProgress = 0;
+            detailLight.visible = false;
+            
+            // Reset planet scale
+            if (detailViewPlanet) {
+                detailViewPlanet.scale.set(1, 1, 1);
+            }
+
+            // Slide in Solar Navigator
+            assistantPanel.style.left = '20px';
+            
+            // Reset camera
+            camera.position.set(0, 500, 1200);
+            camera.lookAt(0, 0, 0);
+            targetZoom = 1200;
+
+            // Show everything
+            sun.visible = true;
+            orbits.forEach(o => o.visible = true);
+            planets.forEach(p => p.visible = true);
+            saturnRing.visible = true;
+
+            isInDetailView = false;
+            detailViewPlanet = null;
+        }
+
+        // ---------- Click Detection for Planets ----------
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            if (isInDetailView) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([...planets, sun]);
+
+            if (intersects.length > 0) {
+                const clickedObject = intersects[0].object;
+                if (clickedObject === sun) {
+                    sun.userData.name = "Sun";
+                    enterDetailView(sun);
+                } else {
+                    enterDetailView(clickedObject);
+                }
+            }
+        });
+        
+        // ---------- Animate ----------
+        function animate(){
+            requestAnimationFrame(animate);
+            
+            if (isInDetailView && detailViewPlanet) {
+                // Smooth camera zoom to planet
+                if (detailViewProgress < 1) {
+                    detailViewProgress += 0.02;
+                    camera.position.lerpVectors(cameraStartPos, cameraTargetPos, detailViewProgress);
+                    camera.lookAt(detailViewPlanet.position);
+                }
+                
+                // Keep rotating the selected planet
+                if (!stopRotation) {
+                    detailViewPlanet.rotation.y += detailViewPlanet.userData.rotSpeed || 0.001;
+                }
+            } else {
+                sun.rotation.y += 0.001;
+                stars.rotation.y += 0.0003;
+                
+                planets.forEach(p=>{
+                    if (!stopRotation) {
+                        p.rotation.y += p.userData.rotSpeed;
+                        if(p.userData.cloudMesh) p.userData.cloudMesh.rotation.y += p.userData.rotSpeed*1.2;
+                    }
+                    
+                    if (!stopOrbits && !alignPlanets) {
+                        p.userData.angle += p.userData.orbitSpeed;
+                    }
+                    
+                    p.position.x = Math.cos(p.userData.angle)*p.userData.distance;
+                    p.position.z = Math.sin(p.userData.angle)*p.userData.distance;
+                });
+                
+                saturnRing.position.copy(saturn.position);
+                
+                camera.position.z += (targetZoom - camera.position.z)*0.05;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // ---------- Resize ----------
+        window.addEventListener("resize", ()=>{
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
