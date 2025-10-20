@@ -357,7 +357,7 @@
         const sunMat = new THREE.MeshBasicMaterial({emissive:0xffffaa, emissiveIntensity:2, color:0xffffaa});
         const sun = new THREE.Mesh(new THREE.SphereGeometry(200,64,64), sunMat);
         scene.add(sun);
-        new THREE.TextureLoader().load("Sun.jpg", tex=>{
+        new THREE.TextureLoader().load("sun.jpg", tex=>{
             sunMat.map = tex;
             sunMat.needsUpdate = true;
         });
@@ -391,7 +391,7 @@
         const planetsData = [
             {name:"Mercury", tex:"mercury.jpg", radius:30, distance:300, rotSpeed:0.02, orbitSpeed:0.004},
             {name:"Venus", tex:"venus.jpg", radius:50, distance:450, rotSpeed:0.018, orbitSpeed:0.002},
-            {name:"Earth", tex:"earth.jpg", radius:55, distance:600, rotSpeed:0.02, orbitSpeed:0.0015, clouds:"textures/earthclouds.jpg"},
+            {name:"Earth", tex:"earth.jpg", radius:55, distance:600, rotSpeed:0.02, orbitSpeed:0.0015, clouds:"earthclouds.jpg"},
             {name:"Mars", tex:"mars.jpg", radius:45, distance:750, rotSpeed:0.018, orbitSpeed:0.001},
             {name:"Jupiter", tex:"jupiter.jpg", radius:120, distance:950, rotSpeed:0.04, orbitSpeed:0.0004},
             {name:"Saturn", tex:"saturn.jpg", radius:100, distance:1150, rotSpeed:0.038, orbitSpeed:0.0003}
@@ -892,4 +892,5 @@
         });
     </script>
 </body>
+
 </html>
