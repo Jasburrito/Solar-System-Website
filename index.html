@@ -25,7 +25,7 @@
         assistantPanel.style.left = '-360px';
         assistantPanel.style.width = '320px';
         assistantPanel.style.padding = '20px';
-        assistantPanel.style.background = 'rgba(0, 20, 40, 0.85)';
+        assistantPanel.style.background = 'rgba(0, 20, 40, 0.7)';
         assistantPanel.style.border = '2px solid rgba(0, 255, 255, 0.5)';
         assistantPanel.style.borderRadius = '10px';
         assistantPanel.style.fontFamily = 'Orbitron, sans-serif';
@@ -35,46 +35,50 @@
         assistantPanel.style.animation = 'panelPulse 3s ease-in-out infinite';
         assistantPanel.style.zIndex = '1000';
         assistantPanel.style.transition = 'left 0.8s ease-out';
-        assistantPanel.style.pointerEvents = 'auto';
+        document.body.appendChild(assistantPanel);
 
         // Arrow toggle button
         const toggleArrow = document.createElement('div');
         toggleArrow.style.position = 'absolute';
-        toggleArrow.style.right = '-40px';
+        toggleArrow.style.right = '-30px';
         toggleArrow.style.top = '50%';
         toggleArrow.style.transform = 'translateY(-50%)';
-        toggleArrow.style.width = '40px';
-        toggleArrow.style.height = '60px';
-        toggleArrow.style.background = 'rgba(0, 20, 40, 0.85)';
+        toggleArrow.style.width = '30px';
+        toggleArrow.style.height = '50px';
+        toggleArrow.style.background = 'linear-gradient(90deg, rgba(0, 20, 40, 0.85) 0%, rgba(0, 40, 60, 0.9) 100%)';
         toggleArrow.style.border = '2px solid rgba(0, 255, 255, 0.5)';
         toggleArrow.style.borderLeft = 'none';
-        toggleArrow.style.borderRadius = '0 10px 10px 0';
+        toggleArrow.style.borderRadius = '0 8px 8px 0';
         toggleArrow.style.display = 'flex';
         toggleArrow.style.alignItems = 'center';
         toggleArrow.style.justifyContent = 'center';
         toggleArrow.style.cursor = 'pointer';
-        toggleArrow.style.fontSize = '24px';
+        toggleArrow.style.fontSize = '18px';
         toggleArrow.style.color = '#00ffff';
         toggleArrow.style.transition = 'all 0.3s';
-        toggleArrow.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.3)';
-        toggleArrow.innerHTML = '►';
+        toggleArrow.style.boxShadow = '2px 0 10px rgba(0, 255, 255, 0.3)';
+        toggleArrow.style.textShadow = '0 0 5px #00ffff';
+        toggleArrow.innerHTML = '▶';
         toggleArrow.onmouseenter = () => {
-            toggleArrow.style.background = 'rgba(0, 255, 255, 0.2)';
-            toggleArrow.style.boxShadow = '0 0 15px rgba(0, 255, 255, 0.5)';
+            toggleArrow.style.background = 'linear-gradient(90deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 255, 255, 0.3) 100%)';
+            toggleArrow.style.boxShadow = '2px 0 15px rgba(0, 255, 255, 0.6)';
+            toggleArrow.style.textShadow = '0 0 10px #00ffff';
         };
         toggleArrow.onmouseleave = () => {
-            toggleArrow.style.background = 'rgba(0, 20, 40, 0.85)';
-            toggleArrow.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.3)';
+            toggleArrow.style.background = 'linear-gradient(90deg, rgba(0, 20, 40, 0.85) 0%, rgba(0, 40, 60, 0.9) 100%)';
+            toggleArrow.style.boxShadow = '2px 0 10px rgba(0, 255, 255, 0.3)';
+            toggleArrow.style.textShadow = '0 0 5px #00ffff';
         };
+        let assistantVisible = false;
         toggleArrow.onclick = (e) => {
             e.stopPropagation();
             assistantVisible = !assistantVisible;
             if (assistantVisible) {
                 assistantPanel.style.left = '20px';
-                toggleArrow.innerHTML = '◄';
+                toggleArrow.innerHTML = '◀';
             } else {
                 assistantPanel.style.left = '-360px';
-                toggleArrow.innerHTML = '►';
+                toggleArrow.innerHTML = '▶';
             }
         };
         assistantPanel.appendChild(toggleArrow);
@@ -150,8 +154,6 @@
             btn.style.fontSize = '12px';
             btn.style.cursor = 'pointer';
             btn.style.transition = 'all 0.3s';
-            btn.style.position = 'relative';
-            btn.style.zIndex = '1001';
             btn.onmouseenter = () => {
                 btn.style.background = 'rgba(0, 255, 255, 0.3)';
                 btn.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.5)';
@@ -180,8 +182,6 @@
             checkbox.style.cursor = 'pointer';
             checkbox.style.width = '16px';
             checkbox.style.height = '16px';
-            checkbox.style.position = 'relative';
-            checkbox.style.zIndex = '1001';
             checkbox.onchange = (e) => {
                 e.stopPropagation();
                 onChange(e);
@@ -219,7 +219,7 @@
         function typeMessage(message, callback) {
             let charIndex = 0;
             messageDisplay.innerHTML = '';
-            if (typingInterval) clearInterval(typingInterval);
+            clearInterval(typingInterval);
             
             typingInterval = setInterval(() => {
                 if (charIndex < message.length) {
@@ -227,7 +227,6 @@
                     charIndex++;
                 } else {
                     clearInterval(typingInterval);
-                    typingInterval = null;
                     if (callback) callback();
                 }
             }, 30);
@@ -329,16 +328,17 @@
             container.style.opacity = '0';
         }, 6000);
         
-        // Add assistant panel to DOM and slide it in after title disappears
-        document.body.appendChild(assistantPanel);
+        // Slide in Solar Navigator
         setTimeout(() => {
             assistantPanel.style.left = '20px';
-            toggleArrow.innerHTML = '◄';
-            // Start typing first message after slide-in completes
-            setTimeout(() => typeMessage(messages[0]), 800);
-        }, 6500);
+            toggleArrow.innerHTML = '◀';
+            assistantVisible = true;
+        }, 7000);
+        
+        // Initial message for assistant
+        setTimeout(() => typeMessage(messages[0]), 7500);
 
-        // Auto-advance messages every 8 seconds
+        // Auto-advance messages
         setInterval(showNextMessage, 8000);
 
         // Variables for settings
@@ -348,7 +348,6 @@
         let stopOrbits = false;
         let stopRotation = false;
         let isInDetailView = false;
-        let assistantVisible = true;
 
         // Settings button
         const settingsBtn = createActionButton('⚙ Settings', () => {
@@ -395,13 +394,13 @@
         document.body.appendChild(renderer.domElement);
         
         // ---------- Lighting ----------
-        scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
         const sunLight = new THREE.PointLight(0xffffff, 2, 0);
         sunLight.position.set(0,0,0);
         scene.add(sunLight);
         
         // Detail view lighting
-        const detailLight = new THREE.PointLight(0xffffff, 1.5, 1000);
+        const detailLight = new THREE.PointLight(0xffffff, 2, 2000);
         detailLight.visible = false;
         scene.add(detailLight);
         
@@ -410,7 +409,7 @@
         const sun = new THREE.Mesh(new THREE.SphereGeometry(200,64,64), sunMat);
         sun.userData = { name: "Sun", rotSpeed: 0.001 };
         scene.add(sun);
-        new THREE.TextureLoader().load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/sun.jpg", tex=>{
+        new THREE.TextureLoader().load("Sun.jpg", tex=>{
             sunMat.map = tex;
             sunMat.needsUpdate = true;
         });
@@ -431,7 +430,6 @@
                 r * Math.cos(phi)
             );
             
-            // Varied brightness
             const brightness = 0.3 + Math.random() * 0.7;
             starColors.push(brightness, brightness, brightness);
         }
@@ -449,37 +447,44 @@
         
         // ---------- Planets Data ----------
         const planetsData = [
-            {name:"Mercury", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercury.jpg", radius:30, distance:300, rotSpeed:0.02, orbitSpeed:0.004},
-            {name:"Venus", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg", radius:50, distance:450, rotSpeed:0.018, orbitSpeed:0.002},
-            {name:"Earth", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg", radius:55, distance:600, rotSpeed:0.02, orbitSpeed:0.0015},
-            {name:"Mars", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg", radius:45, distance:750, rotSpeed:0.018, orbitSpeed:0.001},
-            {name:"Jupiter", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_2k.jpg", radius:120, distance:950, rotSpeed:0.04, orbitSpeed:0.0004},
-            {name:"Saturn", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn_2k.jpg", radius:100, distance:1150, rotSpeed:0.038, orbitSpeed:0.0003},
-            {name:"Uranus", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus_2k.jpg", radius:70, distance:1350, rotSpeed:0.03, orbitSpeed:0.0002},
-            {name:"Neptune", tex:"https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune_2k.jpg", radius:70, distance:1550, rotSpeed:0.032, orbitSpeed:0.0001}
+            {name:"Mercury", tex:"mercury.jpg", radius:30, distance:300, rotSpeed:0.02, orbitSpeed:0.004},
+            {name:"Venus", tex:"venus.jpg", radius:50, distance:450, rotSpeed:0.018, orbitSpeed:0.002},
+            {name:"Earth", tex:"earth.jpg", radius:55, distance:600, rotSpeed:0.02, orbitSpeed:0.0015, clouds:"earthclouds.jpg"},
+            {name:"Mars", tex:"mars.jpg", radius:45, distance:750, rotSpeed:0.018, orbitSpeed:0.001},
+            {name:"Jupiter", tex:"jupiter.jpg", radius:120, distance:950, rotSpeed:0.04, orbitSpeed:0.0004},
+            {name:"Saturn", tex:"saturn.jpg", radius:100, distance:1150, rotSpeed:0.038, orbitSpeed:0.0003},
+            {name:"Uranus", tex:"uranus.jpg", radius:70, distance:1350, rotSpeed:0.03, orbitSpeed:0.0002},
+            {name:"Neptune", tex:"neptune.jpg", radius:70, distance:1550, rotSpeed:0.032, orbitSpeed:0.0001}
         ];
         const planets = [];
         
         // ---------- Helper: Create Planet ----------
         function createPlanet(p){
-            const mat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.8, metalness:0.1 });
-            if(p.tex) {
-                new THREE.TextureLoader().load(p.tex, tex=>{ 
-                    mat.map=tex; 
-                    mat.needsUpdate=true;
-                });
-            }
+            const mat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.9, metalness:0.1 });
+            if(p.tex) new THREE.TextureLoader().load(p.tex, tex=>{ mat.map=tex; mat.needsUpdate=true });
             const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius,64,64), mat);
             mesh.userData = {
                 name: p.name,
                 angle: Math.random()*Math.PI*2, 
-                distance: p.distance, 
-                rotSpeed: p.rotSpeed, 
-                orbitSpeed: p.orbitSpeed,
+                distance:p.distance, 
+                rotSpeed:p.rotSpeed, 
+                orbitSpeed:p.orbitSpeed,
                 originalScale: 1
             };
-            mesh.position.set(p.distance, 0, 0);
+            mesh.position.set(p.distance,0,0);
             scene.add(mesh);
+            if(p.clouds){
+                const cloudGeo = new THREE.SphereGeometry(p.radius*1.02,64,64);
+                const cloudMat = new THREE.MeshStandardMaterial({
+                    map: new THREE.TextureLoader().load(p.clouds),
+                    transparent:true,
+                    opacity:0.35,
+                    depthWrite:false
+                });
+                const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+                mesh.add(cloudMesh);
+                mesh.userData.cloudMesh = cloudMesh;
+            }
             return mesh;
         }
         
@@ -500,18 +505,18 @@
         const saturnInner = saturn.geometry.parameters.radius * 1.5;
         const saturnOuter = saturn.geometry.parameters.radius * 2.3;
         const saturnRingGeo = new THREE.RingGeometry(saturnInner, saturnOuter, 256);
+        const saturnRingTex = new THREE.TextureLoader().load('saturnring.jpg');
         const saturnRingMat = new THREE.MeshStandardMaterial({
-            color: 0xccaa88,
-            transparent: true,
-            opacity: 0.85,
-            side: THREE.DoubleSide,
-            roughness: 0.9,
-            metalness: 0.1
+            map: saturnRingTex,
+            transparent:true,
+            opacity:0.85,
+            side:THREE.DoubleSide,
+            roughness:0.9,
+            metalness:0.1
         });
         const saturnRing = new THREE.Mesh(saturnRingGeo, saturnRingMat);
         saturnRing.rotation.x = THREE.MathUtils.degToRad(26.7);
         saturn.add(saturnRing);
-        saturn.userData.saturnRing = saturnRing;
         
         // ---------- Scroll Zoom ----------
         targetZoom = camera.position.z;
@@ -522,6 +527,26 @@
                 if(targetZoom > 2000) targetZoom = 2000;
             }
         });
+
+        // Custom scrollbar styling
+        const scrollStyle = document.createElement('style');
+        scrollStyle.textContent = `
+            div::-webkit-scrollbar {
+                width: 8px;
+            }
+            div::-webkit-scrollbar-track {
+                background: rgba(0, 40, 80, 0.3);
+                border-radius: 10px;
+            }
+            div::-webkit-scrollbar-thumb {
+                background: rgba(0, 255, 255, 0.5);
+                border-radius: 10px;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 255, 255, 0.7);
+            }
+        `;
+        document.head.appendChild(scrollStyle);
 
         // ---------- Details Panel (LEFT) ----------
         const detailsPanel = document.createElement('div');
@@ -540,8 +565,8 @@
         detailsPanel.style.backdropFilter = 'blur(15px)';
         detailsPanel.style.display = 'none';
         detailsPanel.style.zIndex = '2000';
-        detailsPanel.style.pointerEvents = 'none';
         detailsPanel.style.overflowY = 'auto';
+        detailsPanel.style.pointerEvents = 'none';
         document.body.appendChild(detailsPanel);
 
         const detailsTitle = document.createElement('div');
@@ -575,8 +600,8 @@
         factsPanel.style.backdropFilter = 'blur(15px)';
         factsPanel.style.display = 'none';
         factsPanel.style.zIndex = '2000';
-        factsPanel.style.pointerEvents = 'none';
         factsPanel.style.overflowY = 'auto';
+        factsPanel.style.pointerEvents = 'none';
         document.body.appendChild(factsPanel);
 
         const factsTitle = document.createElement('div');
@@ -592,26 +617,6 @@
         detailFacts.style.fontSize = '14px';
         detailFacts.style.lineHeight = '1.8';
         factsPanel.appendChild(detailFacts);
-
-        // Custom scrollbar styling
-        const scrollStyle = document.createElement('style');
-        scrollStyle.textContent = `
-            div::-webkit-scrollbar {
-                width: 8px;
-            }
-            div::-webkit-scrollbar-track {
-                background: rgba(0, 40, 80, 0.3);
-                border-radius: 10px;
-            }
-            div::-webkit-scrollbar-thumb {
-                background: rgba(0, 255, 255, 0.5);
-                border-radius: 10px;
-            }
-            div::-webkit-scrollbar-thumb:hover {
-                background: rgba(0, 255, 255, 0.7);
-            }
-        `;
-        document.head.appendChild(scrollStyle);
 
         // Return button (centered at bottom)
         const returnBtn = createActionButton('← Return to Solar System', () => {
@@ -799,6 +804,7 @@
         let cameraStartPos = new THREE.Vector3();
         let cameraTargetPos = new THREE.Vector3();
         let detailViewProgress = 0;
+        let factsTypingInterval = null;
 
         function enterDetailView(planet) {
             if (isInDetailView) return;
@@ -809,7 +815,8 @@
             // Hide assistant
             if (assistantVisible) {
                 assistantPanel.style.left = '-360px';
-                toggleArrow.innerHTML = '►';
+                toggleArrow.innerHTML = '▶';
+                assistantVisible = false;
             }
 
             // Store camera start position
@@ -821,19 +828,15 @@
             let offset;
             
             if (planet === sun) {
-                // For sun, position camera directly in front
                 offset = 500;
                 cameraTargetPos.set(planetPos.x + offset, planetPos.y + 100, planetPos.z);
             } else {
-                // Calculate direction from sun to planet
                 const sunToPlanetvec = new THREE.Vector3().subVectors(planetPos, new THREE.Vector3(0, 0, 0)).normalize();
                 
-                // Determine offset based on planet size
                 offset = planet.userData.name === "Jupiter" ? 400 : 
                          planet.userData.name === "Saturn" ? 350 : 
                          planet.userData.name === "Uranus" || planet.userData.name === "Neptune" ? 250 : 200;
                 
-                // Position camera on the sunlit side (between sun and planet)
                 cameraTargetPos.set(
                     planetPos.x - sunToPlanetvec.x * offset,
                     planetPos.y + 50,
@@ -848,7 +851,7 @@
             // Enhanced lighting for detail view
             if (planet !== sun) {
                 detailLight.position.copy(cameraTargetPos);
-                detailLight.intensity = 3;
+                detailLight.intensity = 2;
                 detailLight.visible = true;
             }
 
@@ -882,19 +885,34 @@
                     }
                     detailStats.innerHTML = statsHTML;
                     
-                    // Build facts as bullet points
-                    let factsHTML = '<ul style="margin: 0; padding-left: 20px;">';
-                    info.facts.forEach(fact => {
-                        factsHTML += `<li style="margin-bottom: 12px;">${fact}</li>`;
-                    });
-                    factsHTML += '</ul>';
-                    detailFacts.innerHTML = factsHTML;
+                    // Type out facts one by one
+                    let fullFacts = info.facts.join(' ');
+                    let charIndex = 0;
+                    detailFacts.innerHTML = '';
+                    
+                    if (factsTypingInterval) clearInterval(factsTypingInterval);
+                    
+                    factsTypingInterval = setInterval(() => {
+                        if (charIndex < fullFacts.length) {
+                            detailFacts.innerHTML += fullFacts[charIndex];
+                            charIndex++;
+                            factsPanel.scrollTop = factsPanel.scrollHeight;
+                        } else {
+                            clearInterval(factsTypingInterval);
+                            factsTypingInterval = null;
+                        }
+                    }, 15);
                 }
             }, 1500);
         }
 
         function exitDetailView() {
             if (!isInDetailView) return;
+            
+            if (factsTypingInterval) {
+                clearInterval(factsTypingInterval);
+                factsTypingInterval = null;
+            }
             
             detailsPanel.style.display = 'none';
             factsPanel.style.display = 'none';
@@ -908,11 +926,10 @@
                 detailViewPlanet.scale.set(1, 1, 1);
             }
 
-            // Show assistant if it was visible
-            if (assistantVisible) {
-                assistantPanel.style.left = '20px';
-                toggleArrow.innerHTML = '◄';
-            }
+            // Show assistant
+            assistantPanel.style.left = '20px';
+            toggleArrow.innerHTML = '◀';
+            assistantVisible = true;
             
             // Reset camera
             camera.position.set(0, 500, 1200);
@@ -933,7 +950,6 @@
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
-            // Check if click is on assistant panel or return button
             const clickedElement = event.target;
             if (assistantPanel.contains(clickedElement) || clickedElement === returnBtn) {
                 return;
