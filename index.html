@@ -394,22 +394,18 @@
         document.body.appendChild(renderer.domElement);
         
         // ---------- Lighting ----------
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-        const sunLight = new THREE.PointLight(0xffffff, 2, 0);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const sunLight = new THREE.PointLight(0xffffff, 1.2, 0);
         sunLight.position.set(0,0,0);
         scene.add(sunLight);
-        
-        // Detail view lighting
-        const detailLight = new THREE.PointLight(0xffffff, 2, 2000);
-        detailLight.visible = false;
-        scene.add(detailLight);
         
         // ---------- Sun ----------
         const sunMat = new THREE.MeshBasicMaterial({emissive:0xffffaa, emissiveIntensity:2, color:0xffffaa});
         const sun = new THREE.Mesh(new THREE.SphereGeometry(200,64,64), sunMat);
         sun.userData = { name: "Sun", rotSpeed: 0.001 };
         scene.add(sun);
-        new THREE.TextureLoader().load("Sun.jpg", tex=>{
+        const sunTexLoader = new THREE.TextureLoader();
+        sunTexLoader.load("Sun.jpg", function(tex){
             sunMat.map = tex;
             sunMat.needsUpdate = true;
         });
@@ -506,17 +502,16 @@
         const saturnOuter = saturn.geometry.parameters.radius * 2.3;
         const saturnRingGeo = new THREE.RingGeometry(saturnInner, saturnOuter, 256);
         const saturnRingTex = new THREE.TextureLoader().load('saturnring.jpg');
-        const saturnRingMat = new THREE.MeshStandardMaterial({
+        const saturnRingMat = new THREE.MeshBasicMaterial({
             map: saturnRingTex,
             transparent:true,
-            opacity:0.85,
-            side:THREE.DoubleSide,
-            roughness:0.9,
-            metalness:0.1
+            opacity:0.6,
+            side:THREE.DoubleSide
         });
         const saturnRing = new THREE.Mesh(saturnRingGeo, saturnRingMat);
         saturnRing.rotation.x = THREE.MathUtils.degToRad(26.7);
         saturn.add(saturnRing);
+        saturn.userData.saturnRing = saturnRing;
         
         // ---------- Scroll Zoom ----------
         targetZoom = camera.position.z;
@@ -581,6 +576,7 @@
         const detailStats = document.createElement('div');
         detailStats.style.fontSize = '14px';
         detailStats.style.lineHeight = '2';
+        detailStats.style.minHeight = '200px';
         detailsPanel.appendChild(detailStats);
 
         // ---------- Facts Panel (RIGHT) ----------
@@ -616,6 +612,7 @@
         const detailFacts = document.createElement('div');
         detailFacts.style.fontSize = '14px';
         detailFacts.style.lineHeight = '1.8';
+        detailFacts.style.minHeight = '200px';
         factsPanel.appendChild(detailFacts);
 
         // Return button (centered at bottom)
@@ -805,6 +802,7 @@
         let cameraTargetPos = new THREE.Vector3();
         let detailViewProgress = 0;
         let factsTypingInterval = null;
+        let statsTypingInterval = null;
 
         function enterDetailView(planet) {
             if (isInDetailView) return;
@@ -826,34 +824,37 @@
             const planetPos = planet.position.clone();
             
             let offset;
+            let scaleFactor;
             
             if (planet === sun) {
                 offset = 500;
+                scaleFactor = 1;
                 cameraTargetPos.set(planetPos.x + offset, planetPos.y + 100, planetPos.z);
             } else {
                 const sunToPlanetvec = new THREE.Vector3().subVectors(planetPos, new THREE.Vector3(0, 0, 0)).normalize();
                 
-                offset = planet.userData.name === "Jupiter" ? 400 : 
-                         planet.userData.name === "Saturn" ? 350 : 
-                         planet.userData.name === "Uranus" || planet.userData.name === "Neptune" ? 250 : 200;
+                // Calculate scale to make all planets Mars-sized (45 radius)
+                const targetRadius = 45;
+                scaleFactor = targetRadius / planet.geometry.parameters.radius;
+                
+                // Set consistent zoom distance
+                offset = 180;
                 
                 cameraTargetPos.set(
                     planetPos.x - sunToPlanetvec.x * offset,
                     planetPos.y + 50,
                     planetPos.z - sunToPlanetvec.z * offset
                 );
+                
+                // Turn off standard lighting, make planet self-illuminated
+                planet.material.emissive = new THREE.Color(0xffffff);
+                planet.material.emissiveMap = planet.material.map;
+                planet.material.emissiveIntensity = 1;
             }
 
-            // Scale up planet
-            const scaleFactor = planet === sun ? 1 : 1.5;
+            // Scale planet
             planet.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-            // Enhanced lighting for detail view
-            if (planet !== sun) {
-                detailLight.position.copy(cameraTargetPos);
-                detailLight.intensity = 2;
-                detailLight.visible = true;
-            }
+            planet.userData.detailScale = scaleFactor;
 
             // Hide everything except stars and selected planet
             if (planet !== sun) {
@@ -878,14 +879,29 @@
                 
                 const info = planetInfo[planetName];
                 if (info) {
-                    // Build stats section
+                    // Type out stats
                     let statsHTML = '';
                     for (let key in info.stats) {
                         statsHTML += `<div><span style="color: #00ffff;">${key}:</span> ${info.stats[key]}</div>`;
                     }
-                    detailStats.innerHTML = statsHTML;
+                    let statsText = statsHTML;
+                    let statsCharIndex = 0;
+                    detailStats.innerHTML = '';
                     
-                    // Type out facts one by one
+                    if (statsTypingInterval) clearInterval(statsTypingInterval);
+                    
+                    statsTypingInterval = setInterval(() => {
+                        if (statsCharIndex < statsText.length) {
+                            detailStats.innerHTML += statsText[statsCharIndex];
+                            statsCharIndex++;
+                            detailsPanel.scrollTop = detailsPanel.scrollHeight;
+                        } else {
+                            clearInterval(statsTypingInterval);
+                            statsTypingInterval = null;
+                        }
+                    }, 15);
+                    
+                    // Type out facts
                     let fullFacts = info.facts.join(' ');
                     let charIndex = 0;
                     detailFacts.innerHTML = '';
@@ -914,16 +930,26 @@
                 factsTypingInterval = null;
             }
             
+            if (statsTypingInterval) {
+                clearInterval(statsTypingInterval);
+                statsTypingInterval = null;
+            }
+            
             detailsPanel.style.display = 'none';
             factsPanel.style.display = 'none';
             returnBtn.style.display = 'none';
             planetNameTitle.style.opacity = '0';
             detailViewProgress = 0;
-            detailLight.visible = false;
             
-            // Reset planet scale
+            // Reset planet scale and lighting
             if (detailViewPlanet) {
                 detailViewPlanet.scale.set(1, 1, 1);
+                
+                if (detailViewPlanet !== sun) {
+                    // Restore normal lighting
+                    detailViewPlanet.material.emissive = new THREE.Color(0x000000);
+                    detailViewPlanet.material.emissiveIntensity = 0;
+                }
             }
 
             // Show assistant
@@ -1002,6 +1028,11 @@
                     p.position.x = Math.cos(p.userData.angle)*p.userData.distance;
                     p.position.z = Math.sin(p.userData.angle)*p.userData.distance;
                 });
+                
+                // Rotate Saturn's rings slowly
+                if (saturn.userData.saturnRing && !stopRotation) {
+                    saturn.userData.saturnRing.rotation.z += 0.0001;
+                }
                 
                 camera.position.z += (targetZoom - camera.position.z)*0.05;
             }
