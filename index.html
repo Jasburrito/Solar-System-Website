@@ -849,7 +849,7 @@
                 // Turn off standard lighting, make planet self-illuminated
                 planet.material.emissive = new THREE.Color(0xffffff);
                 planet.material.emissiveMap = planet.material.map;
-                planet.material.emissiveIntensity = 1;
+                planet.material.emissiveIntensity = 0.7;
             }
 
             // Scale planet
@@ -1052,7 +1052,7 @@ statsTypingInterval = setInterval(() => {
                 
                 // Rotate Saturn's rings slowly
                 if (saturn.userData.saturnRing && !stopRotation) {
-                    saturn.userData.saturnRing.rotation.z += 0.000001;
+                    saturn.userData.saturnRing.rotation.z += 0.00000001;
                 }
                 
                 camera.position.z += (targetZoom - camera.position.z)*0.05;
