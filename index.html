@@ -207,10 +207,10 @@
 
         // Assistant messages
         const messages = [
+            " ",
             "Welcome, Explorer. I am your Solar Navigator assistant.",
-            "Use your mouse wheel to zoom in and out of the solar system.",
-            "Watch as planets orbit the Sun in real-time motion.",
-            "Click on a planet to see interesting facts about it."
+            "Use your mouse wheel to scroll in and out of the solar system. Watch as the planets orbit the Sun in realistic orbital periods.",
+            "Tip: Click on a planet to see interesting facts about it."
         ];
 
         let currentMessageIndex = 0;
@@ -405,7 +405,7 @@
         sun.userData = { name: "Sun", rotSpeed: 0.001 };
         scene.add(sun);
         const sunTexLoader = new THREE.TextureLoader();
-        sunTexLoader.load("Sun.jpg", function(tex){
+        sunTexLoader.load("sun.jpg", function(tex){
             sunMat.map = tex;
             sunMat.needsUpdate = true;
         });
@@ -426,7 +426,7 @@
                 r * Math.cos(phi)
             );
             
-            const brightness = 0.3 + Math.random() * 0.7;
+            const brightness = 0.25 + Math.random() * 0.75;
             starColors.push(brightness, brightness, brightness);
         }
         
@@ -498,14 +498,14 @@
         
         // ---------- Saturn Rings ----------
         const saturn = planets[5];
-        const saturnInner = saturn.geometry.parameters.radius * 1.5;
-        const saturnOuter = saturn.geometry.parameters.radius * 2.3;
+        const saturnInner = saturn.geometry.parameters.radius * 1.2;
+        const saturnOuter = saturn.geometry.parameters.radius * 2.0;
         const saturnRingGeo = new THREE.RingGeometry(saturnInner, saturnOuter, 256);
         const saturnRingTex = new THREE.TextureLoader().load('saturnring.jpg');
         const saturnRingMat = new THREE.MeshBasicMaterial({
             map: saturnRingTex,
             transparent:true,
-            opacity:0.6,
+            opacity:0.75,
             side:THREE.DoubleSide
         });
         const saturnRing = new THREE.Mesh(saturnRingGeo, saturnRingMat);
@@ -880,27 +880,48 @@
                 const info = planetInfo[planetName];
                 if (info) {
                     // Type out stats
-                    let statsHTML = '';
-                    for (let key in info.stats) {
-                        statsHTML += `<div><span style="color: #00ffff;">${key}:</span> ${info.stats[key]}</div>`;
-                    }
-                    let statsText = statsHTML;
-                    let statsCharIndex = 0;
-                    detailStats.innerHTML = '';
-                    
-                    if (statsTypingInterval) clearInterval(statsTypingInterval);
-                    
-                    statsTypingInterval = setInterval(() => {
-                        if (statsCharIndex < statsText.length) {
-                            detailStats.innerHTML += statsText[statsCharIndex];
-                            statsCharIndex++;
-                            detailsPanel.scrollTop = detailsPanel.scrollHeight;
-                        } else {
-                            clearInterval(statsTypingInterval);
-                            statsTypingInterval = null;
-                        }
-                    }, 15);
-                    
+detailStats.innerHTML = '';
+let statsLines = [];
+for (let key in info.stats) {
+    statsLines.push({key: key, value: info.stats[key]});
+}
+
+let currentLine = 0;
+let currentChar = 0;
+let currentText = '';
+
+if (statsTypingInterval) clearInterval(statsTypingInterval);
+
+statsTypingInterval = setInterval(() => {
+    if (currentLine < statsLines.length) {
+        const line = statsLines[currentLine];
+        const fullText = `${line.key}: ${line.value}`;
+        
+        if (currentChar < fullText.length) {
+            currentText += fullText[currentChar];
+            currentChar++;
+            
+            const displayText = currentText.split(':');
+            detailStats.innerHTML = '';
+            for (let i = 0; i < currentLine; i++) {
+                detailStats.innerHTML += `<div><span style="color: #00ffff;">${statsLines[i].key}:</span> ${statsLines[i].value}</div>`;
+            }
+            if (displayText.length > 1) {
+                detailStats.innerHTML += `<div><span style="color: #00ffff;">${displayText[0]}:</span>${displayText.slice(1).join(':')}</div>`;
+            } else {
+                detailStats.innerHTML += `<div><span style="color: #00ffff;">${currentText}</span></div>`;
+            }
+            detailsPanel.scrollTop = detailsPanel.scrollHeight;
+        } else {
+            currentLine++;
+            currentChar = 0;
+            currentText = '';
+        }
+    } else {
+        clearInterval(statsTypingInterval);
+        statsTypingInterval = null;
+    }
+}, 15);
                     // Type out facts
                     let fullFacts = info.facts.join(' ');
                     let charIndex = 0;
@@ -1031,7 +1052,7 @@
                 
                 // Rotate Saturn's rings slowly
                 if (saturn.userData.saturnRing && !stopRotation) {
-                    saturn.userData.saturnRing.rotation.z += 0.0001;
+                    saturn.userData.saturnRing.rotation.z += 0.000001;
                 }
                 
                 camera.position.z += (targetZoom - camera.position.z)*0.05;
@@ -1050,3 +1071,4 @@
     </script>
 </body>
 </html>
+
