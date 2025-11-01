@@ -394,8 +394,8 @@
         document.body.appendChild(renderer.domElement);
         
         // ---------- Lighting ----------
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const sunLight = new THREE.PointLight(0xffffff, 1.2, 0);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const sunLight = new THREE.PointLight(0xffffff, 0.8, 0);
         sunLight.position.set(0,0,0);
         scene.add(sunLight);
         
@@ -834,7 +834,7 @@
                 const sunToPlanetvec = new THREE.Vector3().subVectors(planetPos, new THREE.Vector3(0, 0, 0)).normalize();
                 
                 // Calculate scale to make all planets Mars-sized (45 radius)
-                const targetRadius = 45;
+                const targetRadius = 60;
                 scaleFactor = targetRadius / planet.geometry.parameters.radius;
                 
                 // Set consistent zoom distance
@@ -849,7 +849,7 @@
                 // Turn off standard lighting, make planet self-illuminated
                 planet.material.emissive = new THREE.Color(0xffffff);
                 planet.material.emissiveMap = planet.material.map;
-                planet.material.emissiveIntensity = 0.7;
+                planet.material.emissiveIntensity = 0;
             }
 
             // Scale planet
@@ -1052,7 +1052,7 @@ statsTypingInterval = setInterval(() => {
                 
                 // Rotate Saturn's rings slowly
                 if (saturn.userData.saturnRing && !stopRotation) {
-                    saturn.userData.saturnRing.rotation.z += 0.00000001;
+                    saturn.userData.saturnRing.rotation.z += 0.00000000001;
                 }
                 
                 camera.position.z += (targetZoom - camera.position.z)*0.05;
@@ -1071,4 +1071,5 @@ statsTypingInterval = setInterval(() => {
     </script>
 </body>
 </html>
+
 
